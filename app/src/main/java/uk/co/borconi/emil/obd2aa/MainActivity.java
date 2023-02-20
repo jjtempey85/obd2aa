@@ -165,20 +165,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-        Intent intent = new Intent();
-        intent.setClassName("org.prowl.torque", "org.prowl.torque.remote.TorqueService");
-
-        bindService(intent, connection, BIND_AUTO_CREATE);
-        try {
-            Context packagecontext = createPackageContext("org.prowl.torque", 0);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                packagecontext.startForegroundService(intent);
-            } else {
-                startService(intent);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        CreateTorqueInstance();
 
         super.onCreate(savedInstanceState);
 
@@ -198,9 +185,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onPause() {
-        Log.d("OBD2AA", "onPause");
-        super.onPause();
+    protected void onDestroy() {
+         super.onDestroy();
         try {
             unbindService(connection);
             Intent sendIntent = new Intent();
@@ -227,6 +213,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        CreateTorqueInstance();
         if (pidlist != null) {
             navController.popBackStack();
             navController.navigate(R.id.FirstFragment);
@@ -274,5 +261,22 @@ public class MainActivity extends AppCompatActivity {
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
         return NavigationUI.navigateUp(navController, appBarConfiguration)
                 || super.onSupportNavigateUp();
+    }
+    public void CreateTorqueInstance()
+    {
+        Intent intent = new Intent();
+        intent.setClassName("org.prowl.torque", "org.prowl.torque.remote.TorqueService");
+
+        bindService(intent, connection, BIND_AUTO_CREATE);
+        try {
+            Context packagecontext = createPackageContext("org.prowl.torque", 0);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                packagecontext.startForegroundService(intent);
+            } else {
+                startService(intent);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

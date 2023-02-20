@@ -88,7 +88,6 @@ public class OBD2AA extends Screen implements SurfaceCallback {
 
     @Override
     public void onVisibleAreaChanged(@NonNull Rect visibleArea) {
-        Log.d("OBD2", "visible area changed");
     }
 
     @Override
@@ -98,7 +97,6 @@ public class OBD2AA extends Screen implements SurfaceCallback {
 
     @Override
     public void onSurfaceDestroyed(@NonNull SurfaceContainer surfaceContainer) {
-        Log.d("OBD2", "Surface destroyed");
     }
 
     @Override

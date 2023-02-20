@@ -57,7 +57,6 @@ public class OBD2Background {
     private SharedPreferences.Editor editor;
     private String[] aGaugeUnits;
     private boolean alternativepulling;
-    private boolean mBind = false;
     private int nightMode = 0;
     private UiModeManager mUimodemanager = null;
 
@@ -94,7 +93,8 @@ public class OBD2Background {
                             Log.d("OBD2-APP", "Incorrect version. You are using an old version of Torque with this plugin.\n\nThe plugin needs the latest version of Torque to run correctly.\n\nPlease upgrade to the latest version of Torque from Google Play");
                             return;
                         }
-                    } catch (RemoteException e)
+                    }
+                    catch (RemoteException e)
                     {
                     }
                     Log.d("HU", "Have Torque service connection, starting fetching");
@@ -110,7 +110,6 @@ public class OBD2Background {
     public OBD2Background(ITorqueService torqueService, Context context) {
         this.torqueService = torqueService;
         this.context = context;
-        CreateTorqueService();
         onCreate();
     }
 
@@ -145,32 +144,29 @@ public class OBD2Background {
         }
 
         Log.d("OBD2AA", "OBD2 Background Service Created!");
-
-
-
-        dataFetcher();
-
-        if (!prefs.isNight() )
+        try
         {
+            CreateTorqueService();
 
-        } else {
-
-            mUimodemanager = (UiModeManager) context.getSystemService(UI_MODE_SERVICE);
+            dataFetcher();
         }
+        catch (Exception e)
+        {
+            CreateTorqueService();
+
+            dataFetcher();
+        }
+
     }
+
+
 
     public void onDestroy() {
         Log.d("OBD2AA", "OBD2 Background Service on Destroy");
         isrunning = false;
-        if (mBind) {
-            context.unbindService(connection);
-        }
 
-        NotificationManager notificationManager = (NotificationManager) context.getSystemService(NOTIFICATION_SERVICE);
-        notificationManager.cancel(1983);
-        notificationManager.cancel(1984);
-        notificationManager.cancel(1985);
-        notificationManager.cancel(1986);
+
+
         Intent sendIntent = new Intent();
         sendIntent.setAction("org.prowl.torque.REQUEST_TORQUE_QUIT"); //Stop torque
         context.sendBroadcast(sendIntent);
@@ -190,10 +186,11 @@ public class OBD2Background {
                 double d;
 
                 sortPids();
-                while (OBD2Background.isrunning) {
-                    try {
+                while (OBD2Background.isrunning)
+                {
 
-                        // normal
+                    // normal
+                    try {
                         if (torqueService.isConnectedToECU())
                         {
                             List aTempGaugePIDs = Arrays.asList(aGaugePIDs);
@@ -203,11 +200,11 @@ public class OBD2Background {
                             for (PIDToFetch CurrTorquePID : aTorquePIDstoFetch) {
                                 int TorqueIndexOfGaugePID = aTempGaugePIDs.indexOf(CurrTorquePID.getSinglePid());
                                 if (TorquePIDUpdateTime[TorqueIndexOfGaugePID] == 0) {
-                                    sleep(200);
+                                    sleep(10);
                                     continue;
                                 }
                                 if ((TorquePIDUpdateTime[TorqueIndexOfGaugePID] == CurrTorquePID.getLastFetch())) {
-                                    sleep(100);
+                                    sleep(10);
                                     continue;
                                 }
                                 CurrTorquePID.putLastFetch(TorquePIDUpdateTime[TorqueIndexOfGaugePID]);
@@ -226,17 +223,25 @@ public class OBD2Background {
                                 }
                             }
                         }
-                        Thread.sleep(100);
+                    } catch (RemoteException e) {
+                        OBD2Background.isrunning = false;
+
+                        throw new RuntimeException(e);
+                    } catch (InterruptedException e) {
+                        OBD2Background.isrunning = false;
+
+                        throw new RuntimeException(e);
+                    }
+                    try {
+                        Thread.sleep(150);
+                    } catch (InterruptedException e) {
+                        OBD2Background.isrunning = false;
+
+                        throw new RuntimeException(e);
 
                     }
-                    catch (Exception e)
-                    {
-                    }
                 }
-                OBD2Background.isrunning = false;
-                if (mBind) {
-                    mBind = false;
-                }
+
 
             }
 
