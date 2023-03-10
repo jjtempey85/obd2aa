@@ -2,11 +2,9 @@ package uk.co.borconi.emil.obd2aa.services;
 
 
 import static android.content.Context.NOTIFICATION_SERVICE;
-import static android.content.Context.UI_MODE_SERVICE;
 
 import android.annotation.SuppressLint;
 import android.app.NotificationManager;
-import android.app.UiModeManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -16,7 +14,6 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.os.IBinder;
-import android.os.Looper;
 import android.os.RemoteException;
 import android.util.Log;
 
@@ -26,15 +23,10 @@ import org.prowl.torque.remote.ITorqueService;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-import uk.co.borconi.emil.obd2aa.androidauto.OBD2AA;
 import uk.co.borconi.emil.obd2aa.gauge.GaugeUpdate;
-import uk.co.borconi.emil.obd2aa.helpers.NearbyCameras;
 import uk.co.borconi.emil.obd2aa.helpers.PreferencesHelper;
 import uk.co.borconi.emil.obd2aa.helpers.UnitConvertHelper;
-import uk.co.borconi.emil.obd2aa.helpers.myGeoDecoder;
 import uk.co.borconi.emil.obd2aa.pid.PIDToFetch;
 
 
@@ -48,7 +40,6 @@ public class OBD2Background {
     public static boolean isdebugging;
     static volatile boolean isrunning;
     private final Context context;
-    private final OBD2AA mOBD2AA = null;
     private final List<PIDToFetch> aTorquePIDstoFetch = new ArrayList<>();
     NotificationManager mNotifyMgr;
     private ITorqueService torqueService;
@@ -56,24 +47,11 @@ public class OBD2Background {
     private PreferencesHelper prefs;
     private SharedPreferences.Editor editor;
     private String[] aGaugeUnits;
-    private boolean alternativepulling;
-    private int nightMode = 0;
-    private UiModeManager mUimodemanager = null;
 
-    private boolean isSpeedCamShowing;
-    private boolean ShowSpeedCamWarrning;
-    private boolean isDemoMode;
-    private Paint textpaint;
-    private Paint paint;
     private RectF rectF;
-    ServiceConnection connection;
     private boolean useImperial;
-    private myGeoDecoder mgeodecoder;
 
-    private NearbyCameras prevCamera;
-    private boolean streetcard;
-    private ExecutorService geodecoderexecutor;
-    private int CameraRefreshFreq;
+
     private String mobile_filter, static_filter;
 
 
@@ -81,31 +59,27 @@ public class OBD2Background {
     public void CreateTorqueService()
     {
 
-        if (torqueService == null)
-        {
-            ServiceConnection connection = new ServiceConnection() {
-                public void onServiceConnected(ComponentName arg0, IBinder service) {
-                    Log.d("HU", "SERVICE CONNECTED!");
-                    torqueService = ITorqueService.Stub.asInterface(service);
 
-                    try {
-                        if (torqueService.getVersion() < 19) {
-                            Log.d("OBD2-APP", "Incorrect version. You are using an old version of Torque with this plugin.\n\nThe plugin needs the latest version of Torque to run correctly.\n\nPlease upgrade to the latest version of Torque from Google Play");
-                            return;
-                        }
+        ServiceConnection connection = new ServiceConnection() {
+            public void onServiceConnected(ComponentName arg0, IBinder service) {
+                torqueService = ITorqueService.Stub.asInterface(service);
+
+                try {
+                    if (torqueService.getVersion() < 19) {
+                        Log.d("OBD2-APP", "Incorrect version. You are using an old version of Torque with this plugin.\n\nThe plugin needs the latest version of Torque to run correctly.\n\nPlease upgrade to the latest version of Torque from Google Play");
+                        return;
                     }
-                    catch (RemoteException e)
-                    {
-                    }
-                    Log.d("HU", "Have Torque service connection, starting fetching");
                 }
-
-                public void onServiceDisconnected(ComponentName name) {
-                    torqueService = null;
+                catch (RemoteException e)
+                {
                 }
-            };
+                Log.d("HU", "Have Torque service connection, starting fetching");
+            }
 
-        }
+            public void onServiceDisconnected(ComponentName name) {
+                torqueService = null;
+            }
+        };
     }
     public OBD2Background(ITorqueService torqueService, Context context) {
         this.torqueService = torqueService;
@@ -117,26 +91,20 @@ public class OBD2Background {
         prefs = PreferencesHelper.getPreferences(context);
         mNotifyMgr = (NotificationManager) context.getSystemService(NOTIFICATION_SERVICE);
         editor = prefs.edit();
-        mgeodecoder = new myGeoDecoder(context);
-        textpaint = new Paint();
+        Paint textpaint = new Paint();
         textpaint.setARGB(255, 0, 0, 0);
         textpaint.setTextAlign(Paint.Align.CENTER);
         textpaint.setTextSize(110);
         textpaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
         rectF = new RectF();
         rectF.set(16, 16, 240, 240);
-        geodecoderexecutor = Executors.newSingleThreadExecutor();
-        paint = new Paint();
-        isDemoMode = prefs.isInDemoMode();
         useImperial = prefs.shouldUseImperial();
         int gaugeNumber = prefs.getNumberOfGauges();
-        streetcard = prefs.shouldHaveStreetCard();
 
 
         aGaugePIDs = new String[gaugeNumber];
         aGaugeUnits = new String[gaugeNumber];
         isdebugging = prefs.isDebugging();
-        alternativepulling = prefs.hasAlternativePulling();
         for (int i = 1; i <= gaugeNumber; i++) {
             aGaugePIDs[i - 1] = prefs.getPidForGauge(i);
             aGaugeUnits[i - 1] = prefs.getUnitForGauge(i);
@@ -191,36 +159,33 @@ public class OBD2Background {
 
                     // normal
                     try {
-                        if (torqueService.isConnectedToECU())
-                        {
-                            List aTempGaugePIDs = Arrays.asList(aGaugePIDs);
-                            float[] aiTorquePIDValues = torqueService.getPIDValues(aGaugePIDs);
+                        List aTempGaugePIDs = Arrays.asList(aGaugePIDs);
+                        float[] aiTorquePIDValues = torqueService.getPIDValues(aGaugePIDs);
 
-                            long[] TorquePIDUpdateTime = torqueService.getPIDUpdateTime(aGaugePIDs);
-                            for (PIDToFetch CurrTorquePID : aTorquePIDstoFetch) {
-                                int TorqueIndexOfGaugePID = aTempGaugePIDs.indexOf(CurrTorquePID.getSinglePid());
-                                if (TorquePIDUpdateTime[TorqueIndexOfGaugePID] == 0) {
-                                    sleep(10);
-                                    continue;
-                                }
-                                if ((TorquePIDUpdateTime[TorqueIndexOfGaugePID] == CurrTorquePID.getLastFetch())) {
-                                    sleep(10);
-                                    continue;
-                                }
-                                CurrTorquePID.putLastFetch(TorquePIDUpdateTime[TorqueIndexOfGaugePID]);
+                        long[] TorquePIDUpdateTime = torqueService.getPIDUpdateTime(aGaugePIDs);
+                        for (PIDToFetch CurrTorquePID : aTorquePIDstoFetch) {
+                            int TorqueIndexOfGaugePID = aTempGaugePIDs.indexOf(CurrTorquePID.getSinglePid());
+                            if (TorquePIDUpdateTime[TorqueIndexOfGaugePID] == 0) {
+                                sleep(10);
+                                continue;
+                            }
+                            if ((TorquePIDUpdateTime[TorqueIndexOfGaugePID] == CurrTorquePID.getLastFetch())) {
+                                sleep(10);
+                                continue;
+                            }
+                            CurrTorquePID.putLastFetch(TorquePIDUpdateTime[TorqueIndexOfGaugePID]);
 
-                                if (CurrTorquePID.getNeedsConversion()) {
-                                    aiTorquePIDValues[TorqueIndexOfGaugePID] = UnitConvertHelper.ConvertValue(aiTorquePIDValues[TorqueIndexOfGaugePID], CurrTorquePID.getUnit());
-                                }
-                                if (EventBus.getDefault().hasSubscriberForEvent(GaugeUpdate.class)) {
-                                    GaugeUpdate update = new GaugeUpdate(
-                                            CurrTorquePID.getGaugeNumber(),
-                                            Math.max(
-                                                    Math.max(aiTorquePIDValues[TorqueIndexOfGaugePID], CurrTorquePID.getMinValue()),
-                                                    Math.min(aiTorquePIDValues[TorqueIndexOfGaugePID], CurrTorquePID.getMaxValue())
-                                            ));
-                                    EventBus.getDefault().post(update);
-                                }
+                            if (CurrTorquePID.getNeedsConversion()) {
+                                aiTorquePIDValues[TorqueIndexOfGaugePID] = UnitConvertHelper.ConvertValue(aiTorquePIDValues[TorqueIndexOfGaugePID], CurrTorquePID.getUnit());
+                            }
+                            if (EventBus.getDefault().hasSubscriberForEvent(GaugeUpdate.class)) {
+                                GaugeUpdate update = new GaugeUpdate(
+                                        CurrTorquePID.getGaugeNumber(),
+                                        Math.max(
+                                                Math.max(aiTorquePIDValues[TorqueIndexOfGaugePID], CurrTorquePID.getMinValue()),
+                                                Math.min(aiTorquePIDValues[TorqueIndexOfGaugePID], CurrTorquePID.getMaxValue())
+                                        ));
+                                EventBus.getDefault().post(update);
                             }
                         }
                     } catch (RemoteException e) {
