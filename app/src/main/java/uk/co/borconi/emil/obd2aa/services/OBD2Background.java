@@ -30,9 +30,6 @@ import uk.co.borconi.emil.obd2aa.helpers.UnitConvertHelper;
 import uk.co.borconi.emil.obd2aa.pid.PIDToFetch;
 
 
-/**
- * Created by Emil on 31/08/2017.
- */
 
 
 public class OBD2Background {
@@ -154,7 +151,6 @@ public class OBD2Background {
                 double d;
 
                 sortPids();
-                while (OBD2Background.isrunning)
                 {
 
                     // normal
@@ -165,12 +161,24 @@ public class OBD2Background {
                         long[] TorquePIDUpdateTime = torqueService.getPIDUpdateTime(aGaugePIDs);
                         for (PIDToFetch CurrTorquePID : aTorquePIDstoFetch) {
                             int TorqueIndexOfGaugePID = aTempGaugePIDs.indexOf(CurrTorquePID.getSinglePid());
+                            // if first update
                             if (TorquePIDUpdateTime[TorqueIndexOfGaugePID] == 0) {
-                                sleep(10);
+                                try {
+                                    sleep(100);
+                                } catch (InterruptedException e) {
+                                    continue;
+                                    //throw new RuntimeException(e);
+                                }
                                 continue;
                             }
+                            // if no update
                             if ((TorquePIDUpdateTime[TorqueIndexOfGaugePID] == CurrTorquePID.getLastFetch())) {
-                                sleep(10);
+                                try {
+                                    sleep(100);
+                                } catch (InterruptedException e) {
+                                    continue;
+                                    //throw new RuntimeException(e);
+                                }
                                 continue;
                             }
                             CurrTorquePID.putLastFetch(TorquePIDUpdateTime[TorqueIndexOfGaugePID]);
@@ -189,18 +197,12 @@ public class OBD2Background {
                             }
                         }
                     } catch (RemoteException e) {
-                        OBD2Background.isrunning = false;
-
-                        throw new RuntimeException(e);
-                    } catch (InterruptedException e) {
-                        OBD2Background.isrunning = false;
 
                         throw new RuntimeException(e);
                     }
                     try {
                         Thread.sleep(150);
                     } catch (InterruptedException e) {
-                        OBD2Background.isrunning = false;
 
                         throw new RuntimeException(e);
 

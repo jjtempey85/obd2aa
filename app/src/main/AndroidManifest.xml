@@ -42,19 +42,6 @@
         </activity>
 
 
-        <activity
-            android:name="uk.co.borconi.emil.obd2aa.UsbReceiver"
-            android:exported="false"
-            android:launchMode="singleInstance"
-            android:showOnLockScreen="true">
-            <intent-filter>
-                <action android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED" />
-            </intent-filter>
-            <meta-data
-                android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED"
-                android:resource="@xml/accessory_filter" />
-        </activity>
-
         <meta-data
             android:name="com.google.android.gms.car.application"
             android:resource="@xml/automotive_app_desc"
@@ -72,8 +59,5 @@
             </intent-filter>
         </service>
 
-        <service
-            android:name="uk.co.borconi.emil.obd2aa.services.HackerService"
-            android:exported="true" />
     </application>
 </manifest>

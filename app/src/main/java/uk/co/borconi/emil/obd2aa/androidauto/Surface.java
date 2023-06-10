@@ -6,7 +6,6 @@ import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.media.MediaPlayer;
 import android.util.Log;
-import android.view.Surface;
 
 import androidx.annotation.NonNull;
 import androidx.car.app.AppManager;
@@ -24,7 +23,7 @@ import uk.co.borconi.emil.obd2aa.helpers.PreferencesHelper;
 import uk.co.borconi.emil.obd2aa.services.OBD2Background;
 
 
-public class OBD2AA extends Screen implements SurfaceCallback {
+public class Surface extends Screen implements SurfaceCallback {
 
     private final CarContext carContext;
     private final Context context;
@@ -43,7 +42,7 @@ public class OBD2AA extends Screen implements SurfaceCallback {
     private MediaPlayer mediaPlayer;
     private boolean prepared;
 
-    public OBD2AA(CarContext carContext, Context context) {
+    public Surface(CarContext carContext, Context context) {
 
         super(carContext);
         this.carContext = carContext;
@@ -73,15 +72,13 @@ public class OBD2AA extends Screen implements SurfaceCallback {
 
     @Override
     public void onSurfaceAvailable(@NonNull SurfaceContainer surfaceContainer) {
-        Surface surface = surfaceContainer.getSurface();
-        Log.d("OBD", "Surface available: " + surfaceContainer);
+        android.view.Surface surface = surfaceContainer.getSurface();
         int dpi = 160;
         if (surfaceContainer.getDpi() != 0) {
             dpi = surfaceContainer.getDpi();
         }
         DisplayManager displayManager = (DisplayManager) context.getSystemService(Context.DISPLAY_SERVICE);
         VirtualDisplay display = displayManager.createVirtualDisplay("OBD2", surfaceContainer.getWidth(), surfaceContainer.getHeight(), dpi, surface /* flags */, 0, null /* callback */, null /* handler */);
-        Log.d("OBD", "Got a surface & display: " + display.getDisplay().toString());
         Projection mPresentation = new Projection(context, display.getDisplay());
         mPresentation.show();
     }

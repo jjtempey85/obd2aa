@@ -16,7 +16,7 @@ import androidx.car.app.validation.HostValidator;
 
 import org.prowl.torque.remote.ITorqueService;
 
-import uk.co.borconi.emil.obd2aa.androidauto.OBD2AA;
+import uk.co.borconi.emil.obd2aa.androidauto.Surface;
 import uk.co.borconi.emil.obd2aa.services.OBD2Background;
 
 public class OBD2AAService extends CarAppService {
@@ -63,7 +63,7 @@ public class OBD2AAService extends CarAppService {
             @Override
             @NonNull
             public Screen onCreateScreen(@Nullable Intent intent) {
-                return new OBD2AA(getCarContext(), getApplicationContext());
+                return new Surface(getCarContext(), getApplicationContext());
                 //return null;
 
             }
