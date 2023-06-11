@@ -5,15 +5,12 @@ import static android.content.Context.NOTIFICATION_SERVICE;
 
 import android.annotation.SuppressLint;
 import android.app.NotificationManager;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.Typeface;
-import android.os.IBinder;
 import android.os.RemoteException;
 import android.util.Log;
 
@@ -35,7 +32,6 @@ import uk.co.borconi.emil.obd2aa.pid.PIDToFetch;
 public class OBD2Background {
 
     public static boolean isdebugging;
-    static volatile boolean isrunning;
     private final Context context;
     private final List<PIDToFetch> aTorquePIDstoFetch = new ArrayList<>();
     NotificationManager mNotifyMgr;
@@ -53,31 +49,7 @@ public class OBD2Background {
 
 
 
-    public void CreateTorqueService()
-    {
 
-
-        ServiceConnection connection = new ServiceConnection() {
-            public void onServiceConnected(ComponentName arg0, IBinder service) {
-                torqueService = ITorqueService.Stub.asInterface(service);
-
-                try {
-                    if (torqueService.getVersion() < 19) {
-                        Log.d("OBD2-APP", "Incorrect version. You are using an old version of Torque with this plugin.\n\nThe plugin needs the latest version of Torque to run correctly.\n\nPlease upgrade to the latest version of Torque from Google Play");
-                        return;
-                    }
-                }
-                catch (RemoteException e)
-                {
-                }
-                Log.d("HU", "Have Torque service connection, starting fetching");
-            }
-
-            public void onServiceDisconnected(ComponentName name) {
-                torqueService = null;
-            }
-        };
-    }
     public OBD2Background(ITorqueService torqueService, Context context) {
         this.torqueService = torqueService;
         this.context = context;
@@ -111,13 +83,11 @@ public class OBD2Background {
         Log.d("OBD2AA", "OBD2 Background Service Created!");
         try
         {
-            CreateTorqueService();
 
             dataFetcher();
         }
         catch (Exception e)
         {
-            CreateTorqueService();
 
             dataFetcher();
         }
@@ -128,7 +98,6 @@ public class OBD2Background {
 
     public void onDestroy() {
         Log.d("OBD2AA", "OBD2 Background Service on Destroy");
-        isrunning = false;
 
 
 
@@ -141,7 +110,6 @@ public class OBD2Background {
     private void dataFetcher()
     {
 
-        isrunning = true;
         Thread thread = new Thread() {
             /* JADX WARNING: No exception handlers in catch block: Catch:{  } */
             @SuppressLint({"WrongConstant"})
@@ -151,6 +119,7 @@ public class OBD2Background {
                 double d;
 
                 sortPids();
+                while(true)
                 {
 
                     // normal
@@ -164,9 +133,8 @@ public class OBD2Background {
                             // if first update
                             if (TorquePIDUpdateTime[TorqueIndexOfGaugePID] == 0) {
                                 try {
-                                    sleep(100);
+                                    sleep(10);
                                 } catch (InterruptedException e) {
-                                    continue;
                                     //throw new RuntimeException(e);
                                 }
                                 continue;
@@ -174,9 +142,8 @@ public class OBD2Background {
                             // if no update
                             if ((TorquePIDUpdateTime[TorqueIndexOfGaugePID] == CurrTorquePID.getLastFetch())) {
                                 try {
-                                    sleep(100);
+                                    sleep(10);
                                 } catch (InterruptedException e) {
-                                    continue;
                                     //throw new RuntimeException(e);
                                 }
                                 continue;
@@ -200,13 +167,7 @@ public class OBD2Background {
 
                         throw new RuntimeException(e);
                     }
-                    try {
-                        Thread.sleep(150);
-                    } catch (InterruptedException e) {
 
-                        throw new RuntimeException(e);
-
-                    }
                 }
 
 

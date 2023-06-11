@@ -80,7 +80,7 @@ public class Projection extends Presentation {
             gauge.setVal(arcProgress.getMax());
         }
         ArchAnimation animation = new ArchAnimation(arcProgress, gauge.getVal());
-        animation.setDuration(170);
+        animation.setDuration(100);
         arcProgress.startAnimation(animation);
     }
 
