@@ -97,10 +97,6 @@ public class OBD2Background {
 
 
     public void onDestroy() {
-        Log.d("OBD2AA", "OBD2 Background Service on Destroy");
-
-
-
         Intent sendIntent = new Intent();
         sendIntent.setAction("org.prowl.torque.REQUEST_TORQUE_QUIT"); //Stop torque
         context.sendBroadcast(sendIntent);
@@ -130,7 +126,8 @@ public class OBD2Background {
                         long[] TorquePIDUpdateTime = torqueService.getPIDUpdateTime(aGaugePIDs);
                         for (PIDToFetch CurrTorquePID : aTorquePIDstoFetch) {
                             int TorqueIndexOfGaugePID = aTempGaugePIDs.indexOf(CurrTorquePID.getSinglePid());
-                            // if first update
+
+                            // if first update based on timestamp
                             if (TorquePIDUpdateTime[TorqueIndexOfGaugePID] == 0) {
                                 try {
                                     sleep(10);
@@ -139,7 +136,7 @@ public class OBD2Background {
                                 }
                                 continue;
                             }
-                            // if no update
+                            // if no update based on timestamp
                             if ((TorquePIDUpdateTime[TorqueIndexOfGaugePID] == CurrTorquePID.getLastFetch())) {
                                 try {
                                     sleep(10);

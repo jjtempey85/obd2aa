@@ -26,7 +26,6 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
@@ -179,8 +178,20 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-        CreateTorqueInstance();
+        Intent intent = new Intent();
+        intent.setClassName("org.prowl.torque", "org.prowl.torque.remote.TorqueService");
 
+        bindService(intent, connection, BIND_AUTO_CREATE);
+        try {
+            Context packagecontext = createPackageContext("org.prowl.torque", 0);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                packagecontext.startForegroundService(intent);
+            } else {
+                startService(intent);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         super.onCreate(savedInstanceState);
 
         preferences = PreferencesHelper.getPreferences(this);
@@ -223,22 +234,4 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-
-    public void CreateTorqueInstance()
-    {
-        Intent intent = new Intent();
-        intent.setClassName("org.prowl.torque", "org.prowl.torque.remote.TorqueService");
-
-        bindService(intent, connection, BIND_AUTO_CREATE);
-        try {
-            Context packagecontext = createPackageContext("org.prowl.torque", 0);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                packagecontext.startForegroundService(intent);
-            } else {
-                startService(intent);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 }
